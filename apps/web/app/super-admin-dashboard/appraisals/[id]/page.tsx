@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui";
 import { api } from "@/lib/api";
 import { API_ORIGIN } from "@/lib/api-client";
 import { getPrimaryRole } from "@/lib/utils/routing";
@@ -68,6 +69,7 @@ function SuperAdminAppraisalDetail() {
   const [saving, setSaving] = useState(false);
   const [adjustedPercent, setAdjustedPercent] = useState<number | undefined>();
   const [remark, setRemark] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -104,6 +106,9 @@ function SuperAdminAppraisalDetail() {
     ? appraisal.currentSalary + (appraisal.currentSalary * finalPercent) / 100
     : 0;
   const salaryIncrement = revisedSalary - (appraisal?.currentSalary ?? 0);
+  const hrRecommendedPercent = appraisal?.finalPercent ?? 0;
+  const percentAdjusted =
+    adjustedPercent !== undefined && adjustedPercent !== hrRecommendedPercent;
 
   async function handleApprove() {
     if (!appraisal) return;
@@ -364,7 +369,8 @@ function SuperAdminAppraisalDetail() {
 
               <div className="flex gap-3 pt-4">
                 <button
-                  onClick={handleApprove}
+                  type="button"
+                  onClick={() => setConfirmOpen(true)}
                   disabled={saving}
                   className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-success px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -411,6 +417,76 @@ function SuperAdminAppraisalDetail() {
           </div>
         )}
       </div>
+
+      {/* Final-approval confirmation. This step is irreversible: it marks the
+          appraisal FULLY_APPROVED and writes the revised salary. */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Confirm Final Approval"
+        description={
+          <div className="space-y-4">
+            <p>
+              You are about to <span className="font-semibold text-text">fully approve</span>{" "}
+              the appraisal for{" "}
+              <span className="font-semibold text-text">
+                {appraisal.user.firstName} {appraisal.user.lastName}
+              </span>{" "}
+              ({appraisal.cycle.name}).
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-bg p-3">
+                <p className="text-xs text-text-3">Increment %</p>
+                <p className="mt-1 text-xl font-bold text-brand">
+                  {finalPercent.toFixed(1)}%
+                </p>
+                {percentAdjusted && (
+                  <p className="mt-1 text-xs text-warning">
+                    Adjusted from HR recommended {hrRecommendedPercent.toFixed(1)}%
+                  </p>
+                )}
+              </div>
+              <div className="rounded-lg bg-bg p-3">
+                <p className="text-xs text-text-3">Increment Amount</p>
+                <p className="mt-1 text-xl font-bold text-success">
+                  ₹
+                  {salaryIncrement.toLocaleString("en-IN", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
+                </p>
+              </div>
+              <div className="rounded-lg bg-bg p-3">
+                <p className="text-xs text-text-3">Current Salary</p>
+                <p className="mt-1 text-base font-semibold text-text">
+                  ₹{appraisal.currentSalary?.toLocaleString("en-IN") ?? 0}
+                </p>
+              </div>
+              <div className="rounded-lg bg-bg p-3">
+                <p className="text-xs text-text-3">Revised Salary</p>
+                <p className="mt-1 text-base font-semibold text-text">
+                  ₹
+                  {revisedSalary.toLocaleString("en-IN", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
+                </p>
+              </div>
+            </div>
+
+            <p className="rounded-lg border border-warning/30 bg-warning-bg px-3 py-2 text-xs text-warning">
+              This will mark the appraisal as <strong>FULLY APPROVED</strong> and
+              update the faculty&apos;s salary. This action cannot be undone.
+            </p>
+          </div>
+        }
+        confirmLabel={saving ? "Approving..." : "Yes, Approve & Finalise"}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          void handleApprove();
+        }}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   persistHodScore,
 } from "../services/hodScoringService";
 import { applyMemoPenalty } from "../lib/memoPolicy";
+import { incrementFnForItems } from "../lib/appraisalPolicy";
 import { writeAuditLog } from "../lib/audit";
 
 const router: express.Router = express.Router();
@@ -45,19 +46,6 @@ function parseItemNotes(notes: string | null) {
   } catch {
     return {};
   }
-}
-
-function facultyIncrement(totalPoints: number) {
-  if (totalPoints < 16) {
-    return 5;
-  }
-  if (totalPoints < 30) {
-    return 8;
-  }
-  if (totalPoints < 45) {
-    return 10;
-  }
-  return 15;
 }
 
 // Evaluated from a department.hodId already present in an earlier query's
@@ -610,7 +598,11 @@ router.put(
         penalty: memoPenalty,
         netPoints: totalApproved,
         incrementPercent,
-      } = applyMemoPenalty(grossApproved, parsed.memoIssues, facultyIncrement);
+      } = applyMemoPenalty(
+        grossApproved,
+        parsed.memoIssues,
+        incrementFnForItems(appraisal.items),
+      );
 
       const committees = await prisma.committee.findMany({
         select: { id: true },
@@ -1094,7 +1086,7 @@ router.put(
 
       // Only the final status update needs to be atomic
       if (isFinalSubmit) {
-        const incrementPercent = facultyIncrement(totalApproved);
+        const incrementPercent = incrementFnForItems(appraisal.items)(totalApproved);
         await prisma.$transaction([
           prisma.appraisal.update({
             where: { id: appraisalId },

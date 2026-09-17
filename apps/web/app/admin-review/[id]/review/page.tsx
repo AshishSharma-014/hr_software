@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui";
 import { api } from "@/lib/api";
+import { incrementForAppraisal } from "@/lib/utils/incrementPolicy";
 import { getPrimaryRole } from "@/lib/utils/routing";
 import { useAuthStore } from "@/store/auth";
 
@@ -74,6 +75,7 @@ function AdminReviewDetail() {
   const [rejecting, setRejecting] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -127,11 +129,10 @@ function AdminReviewDetail() {
     [itemState, hodAdditionalPoints],
   );
 
+  // Faculty vs HOD ladder is chosen by the appraisal's own criteria — see
+  // lib/utils/incrementPolicy.ts (mirror of the API's lib/appraisalPolicy.ts).
   function adminIncrement(points: number) {
-    if (points < 16) return 5;
-    if (points < 30) return 8;
-    if (points < 45) return 10;
-    return 15;
+    return incrementForAppraisal(points, detail?.items);
   }
 
   const isEditable = detail?.status === "ADMIN_REVIEW";
@@ -150,8 +151,7 @@ function AdminReviewDetail() {
       await api.adminReview.submitReview(appraisalId, { items, overallRemark: overallRemark.trim() || undefined });
       toast({
         title: "Success",
-        description:
-          "Appraisal reviewed and forwarded to Super Admin for final approval.",
+        description: "Appraisal fully approved.",
         variant: "success",
       });
       router.push("/admin-review");
@@ -418,7 +418,7 @@ function AdminReviewDetail() {
               </button>
               <button
                 type="button"
-                onClick={() => void handleSubmit()}
+                onClick={() => setApproveDialogOpen(true)}
                 disabled={submitting || rejecting}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -429,6 +429,54 @@ function AdminReviewDetail() {
           </div>
         </div>
       )}
+
+      {/* Final-approval confirmation. The API marks the appraisal
+          FULLY_APPROVED on submit, so the admin sees the increment first. */}
+      <ConfirmDialog
+        open={approveDialogOpen}
+        title="Confirm Final Approval"
+        description={
+          <div className="space-y-4">
+            <p>
+              You are about to <span className="font-semibold text-text">fully approve</span>{" "}
+              the appraisal for{" "}
+              <span className="font-semibold text-text">
+                {detail?.user.firstName} {detail?.user.lastName}
+              </span>
+              {detail?.cycle?.name ? ` (${detail.cycle.name})` : ""}.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-bg p-3">
+                <p className="text-xs text-text-3">Total approved points</p>
+                <p className="mt-1 text-xl font-bold text-text">{totalApproved}</p>
+                {hodAdditionalPoints > 0 && (
+                  <p className="mt-1 text-xs text-text-3">
+                    incl. {hodAdditionalPoints} HOD assessment
+                  </p>
+                )}
+              </div>
+              <div className="rounded-lg bg-bg p-3">
+                <p className="text-xs text-text-3">Increment %</p>
+                <p className="mt-1 text-xl font-bold text-brand">
+                  {adminIncrement(totalApproved)}%
+                </p>
+              </div>
+            </div>
+
+            <p className="rounded-lg border border-warning/30 bg-warning-bg px-3 py-2 text-xs text-warning">
+              This will mark the appraisal as <strong>FULLY APPROVED</strong>.
+              This action cannot be undone.
+            </p>
+          </div>
+        }
+        confirmLabel={submitting ? "Approving..." : "Yes, Approve & Finalise"}
+        onCancel={() => setApproveDialogOpen(false)}
+        onConfirm={() => {
+          setApproveDialogOpen(false);
+          void handleSubmit();
+        }}
+      />
 
       <ConfirmDialog
         open={rejectDialogOpen}

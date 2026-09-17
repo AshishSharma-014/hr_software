@@ -19,6 +19,7 @@ import {
   ensureCategoryApprovals,
 } from "../lib/categoryApprovals";
 import { applyMemoPenalty, parseMemoIssues } from "../lib/memoPolicy";
+import { incrementFnForItems } from "../lib/appraisalPolicy";
 
 const router: express.Router = express.Router();
 
@@ -178,13 +179,6 @@ const COMMITTEE_ROLES = [
 
 function isAnyCommittee(roles: string[]): boolean {
   return roles.some((role) => COMMITTEE_ROLES.includes(role));
-}
-
-function facultyIncrement(totalPoints: number) {
-  if (totalPoints < 16) return 5;
-  if (totalPoints < 30) return 8;
-  if (totalPoints < 45) return 10;
-  return 15;
 }
 
 function parseHodAdditionalPoints(hodRemarks: string | null): number {
@@ -946,7 +940,7 @@ router.put(
         const { netPoints: totalApproved, incrementPercent } = applyMemoPenalty(
           grossApproved,
           parseMemoIssues(appraisal.hodRemarks),
-          facultyIncrement,
+          incrementFnForItems(appraisal.items),
         );
         await prisma.appraisal.update({
           where: { id: appraisalId },

@@ -18,6 +18,7 @@ import { api } from "@/lib/api";
 import { API_ORIGIN } from "@/lib/api-client";
 import { getPrimaryRole } from "@/lib/utils/routing";
 import { memoPenaltyFor } from "@/lib/utils/memoPolicy";
+import { isHodAppraisalItems } from "@/lib/utils/incrementPolicy";
 import { useAuthStore } from "@/store/auth";
 
 type ReviewItem = {
@@ -267,14 +268,6 @@ function buildItemPayload(
 
 const EDITABLE_STATUSES = ["HOD_REVIEW", "COMMITTEE_REVIEW"];
 
-const HOD_ONLY_KEYS = [
-  "fee_recovery",
-  "awards_outside_svgoi",
-  "overall_university_result",
-  "placement",
-  "department_university_positions",
-];
-
 function CommitteeReviewPage() {
   const params = useParams();
   const router = useRouter();
@@ -467,7 +460,7 @@ function CommitteeReviewPage() {
   const canEdit = EDITABLE_STATUSES.includes(appraisal?.status ?? "");
 
   const isHodAppraisal = useMemo(
-    () => (appraisal?.items ?? []).some((item) => HOD_ONLY_KEYS.includes(item.criterionKey)),
+    () => isHodAppraisalItems(appraisal?.items),
     [appraisal],
   );
 

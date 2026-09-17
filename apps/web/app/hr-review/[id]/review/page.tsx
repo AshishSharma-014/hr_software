@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui";
 import { api } from "@/lib/api";
 import { API_ORIGIN } from "@/lib/api-client";
+import { incrementForAppraisal } from "@/lib/utils/incrementPolicy";
 import { getPrimaryRole } from "@/lib/utils/routing";
 import { useAuthStore } from "@/store/auth";
 
@@ -153,11 +154,10 @@ function HRReviewDetail() {
     [itemState, hodAdditionalPoints],
   );
 
+  // Faculty vs HOD ladder is chosen by the appraisal's own criteria — see
+  // lib/utils/incrementPolicy.ts (mirror of the API's lib/appraisalPolicy.ts).
   function hrIncrement(points: number) {
-    if (points < 16) return 5;
-    if (points < 30) return 8;
-    if (points < 45) return 10;
-    return 15;
+    return incrementForAppraisal(points, appraisal?.items);
   }
 
   const canEdit = appraisal?.status === "HR_FINALIZED";

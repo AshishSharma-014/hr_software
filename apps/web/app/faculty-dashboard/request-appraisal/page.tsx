@@ -22,6 +22,7 @@ import { AppraisalSubmitPreviewDialog, ConfirmDialog } from "@/components/ui";
 import { api, type FacultyCycleSummary } from "@/lib/api";
 import { API_ORIGIN } from "@/lib/api-client";
 import { toDriveViewerUrl } from "@/lib/utils/drive";
+import { HOD_ASSESSMENT_MAX_POINTS } from "@/lib/utils/incrementPolicy";
 import { getPrimaryRole } from "@/lib/utils/routing";
 import {
   appraisalDraftKey,
@@ -293,6 +294,18 @@ function FacultyAppraisalRequestPage() {
   );
 
 
+  // Faculty can only self-select criteria I–XII; criterion XIII (up to 4 pts)
+  // is awarded by the HOD, which is why maxPoints exceeds the selectable sum.
+  const selfAssessedMax = useMemo(() => {
+    if (!policy) return null;
+    const selectable = policy.criteria.reduce(
+      (sum, criterion) =>
+        sum + Math.max(...criterion.options.map((option) => option.points), 0),
+      0,
+    );
+    return selectable < policy.maxPoints ? selectable : null;
+  }, [policy]);
+
   const incrementPercent = useMemo(() => {
     if (!policy) return 0;
     const bracket = policy.incrementBrackets.find((entry) => {
@@ -517,8 +530,14 @@ function FacultyAppraisalRequestPage() {
                   Max Points
                 </p>
                 <p className="mt-2 font-display text-3xl font-bold text-text">
-                  {policy?.maxPoints ?? 44}
+                  {policy?.maxPoints ?? 52}
                 </p>
+                {selfAssessedMax !== null && (
+                  <p className="mt-1 text-xs text-text-3">
+                    {selfAssessedMax} self-assessed + {HOD_ASSESSMENT_MAX_POINTS}{" "}
+                    HOD assessment (criterion XIII)
+                  </p>
+                )}
               </div>
               <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-widest text-text-3">

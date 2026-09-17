@@ -185,11 +185,13 @@ const defaultPolicy: HODScoringPolicy = {
             { min: 4, points: 4 }
         ]
     },
+    // HOD ladder (max 68 points) — mirrors HOD_INCREMENT_BRACKETS in lib/appraisalPolicy.ts
     incrementBrackets: [
-        { max: 20, points: 5, note: '0 to 20 points' },
-        { min: 21, max: 34, points: 8, note: '21 to 34 points' },
-        { min: 35, max: 49, points: 10, note: '35 to 49 points' },
-        { min: 50, points: 15, note: 'Above 49 points' }
+        { max: 10, points: 0, note: '0 to 10 points' },
+        { min: 11, max: 22, points: 5, note: '11 to 22 points' },
+        { min: 23, max: 35, points: 8, note: '23 to 35 points' },
+        { min: 36, max: 48, points: 10, note: '36 to 48 points' },
+        { min: 49, points: 15, note: 'Above 48 points' }
     ],
     memoDeductions: {
         twoMemos: 4,

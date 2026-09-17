@@ -9,15 +9,9 @@ import {
 import { prisma } from "../lib/prisma";
 import { writeAuditLog } from "../lib/audit";
 import { applyMemoPenalty, parseMemoIssues } from "../lib/memoPolicy";
+import { incrementFnForItems } from "../lib/appraisalPolicy";
 
 const router: express.Router = express.Router();
-
-function facultyIncrement(totalPoints: number) {
-  if (totalPoints < 16) return 5;
-  if (totalPoints < 30) return 8;
-  if (totalPoints < 45) return 10;
-  return 15;
-}
 
 function parseHodAdditionalPoints(hodRemarks: string | null): number {
   if (!hodRemarks) return 0;
@@ -237,7 +231,7 @@ router.put(
 
       const appraisal = await prisma.appraisal.findUnique({
         where: { id: appraisalId },
-        include: { items: { select: { id: true, points: true, notes: true } } },
+        include: { items: { select: { id: true, key: true, points: true, notes: true } } },
       });
 
       if (!appraisal) {
@@ -299,7 +293,7 @@ router.put(
       } = applyMemoPenalty(
         grossApproved,
         parseMemoIssues(appraisal.hodRemarks),
-        facultyIncrement,
+        incrementFnForItems(appraisal.items),
       );
 
       // Single batched statement instead of one UPDATE per item.

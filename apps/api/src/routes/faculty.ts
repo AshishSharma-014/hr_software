@@ -9,6 +9,14 @@ import {
 import { prisma } from "../lib/prisma";
 import { categoryFromLabel } from "../lib/appraisalCategories";
 import {
+  FACULTY_INCREMENT_BRACKETS,
+  FACULTY_MAX_POINTS,
+  HOD_INCREMENT_BRACKETS,
+  HOD_MAX_POINTS,
+  incrementFromBrackets,
+  type IncrementBracket,
+} from "../lib/appraisalPolicy";
+import {
   ensureFacultyUploadDir,
   encryptFacultyIdentity,
   facultyUploadDir,
@@ -38,11 +46,7 @@ type PolicyCriterion = {
 type AppraisalPolicy = {
   criteria: PolicyCriterion[];
   maxPoints: number;
-  incrementBrackets: Array<{
-    min: number;
-    max?: number;
-    incrementPercent: number;
-  }>;
+  incrementBrackets: IncrementBracket[];
 };
 
 const allowedImageTypes: Record<string, string> = {
@@ -73,29 +77,30 @@ function parseItemNotes(notes: string | null): Record<string, unknown> {
 const baseCriteria: PolicyCriterion[] = [
   {
     key: "academics_average_result",
-    heading: "I. Academics Average Result",
+    heading: "I. Academic Performance – Average Student Result",
     category: "Academics",
     options: [
       { value: "below_40", label: "Below 40%", points: 1 },
-      { value: "between_40_60", label: "40 – 60%", points: 2 },
-      { value: "between_60_80", label: "60 – 80%", points: 3 },
+      { value: "between_40_60", label: "40% – 60%", points: 2 },
+      { value: "between_60_80", label: "60% – 80%", points: 3 },
       { value: "above_80", label: "Above 80%", points: 4 },
     ],
   },
   {
     key: "research_publications",
-    heading: "II. Papers Published / Accepted (Scopus / SCI / ABDC / WOS / IEEE / PubMed)",
+    heading:
+      "II. Research Publications – Scopus / SCI / ABDC / WoS / IEEE (Published / Accepted)",
     category: "Research",
     options: [
-      { value: "paper_1", label: "Paper 1", points: 1 },
-      { value: "paper_2", label: "Paper 2", points: 2 },
-      { value: "paper_3", label: "Paper 3", points: 3 },
-      { value: "paper_4", label: "Paper 4", points: 4 },
+      { value: "paper_1", label: "1 Research Paper", points: 1 },
+      { value: "paper_2", label: "2 Research Papers", points: 2 },
+      { value: "paper_3", label: "3 Research Papers", points: 3 },
+      { value: "paper_4", label: "4 or more Research Papers", points: 4 },
     ],
   },
   {
     key: "impact_factor",
-    heading: "III. Total Journal Impact Factor During Assessment Year",
+    heading: "III. Total Impact Factor During the Assessment Year",
     category: "Research",
     options: [
       { value: "between_0_2", label: "0 to 2", points: 1 },
@@ -109,27 +114,32 @@ const baseCriteria: PolicyCriterion[] = [
     heading: "IV. Books / Book Chapters Published",
     category: "Research",
     options: [
-      { value: "book_chapter_1", label: "1 Book Chapter", points: 1 },
+      {
+        value: "book_chapter_1",
+        label: "1 Book Chapter Published",
+        points: 1,
+      },
       {
         value: "book_national",
-        label: "1 Book / Book Edited / Book Authored (National Publisher)",
+        label: "1 Book Published / Edited / Authored by a National Publisher",
         points: 2,
       },
       {
         value: "book_international",
-        label: "1 Book / Book Edited / Book Authored (International Publisher)",
+        label:
+          "1 Book Published / Edited / Authored by an International Publisher",
         points: 3,
       },
       {
         value: "book_national_and_international",
-        label: "1 Book National + 1 Book International",
+        label: "1 National Book + 1 International Book",
         points: 4,
       },
     ],
   },
   {
     key: "patents",
-    heading: "V. Patents",
+    heading: "V. Patents Granted",
     category: "Research",
     options: [
       { value: "design_patent_1", label: "1 Design Patent", points: 1 },
@@ -144,45 +154,52 @@ const baseCriteria: PolicyCriterion[] = [
   },
   {
     key: "conference_seminar_workshop",
-    heading: "VI. Conference / Seminar / Symposia / Workshop",
+    heading: "VI. Conferences / Seminars / Symposia / Workshops",
     category: "Academics",
     options: [
-      { value: "any_one_attended", label: "Any one attended", points: 1 },
+      {
+        value: "any_one_attended",
+        label:
+          "Participation in any one Conference / Seminar / Symposium / Workshop",
+        points: 1,
+      },
       {
         value: "presentation_any_one",
-        label: "Presentation in any one",
+        label:
+          "Paper Presentation at a National Conference / Seminar / Symposium / Workshop",
         points: 2,
       },
       {
         value: "organized_national_or_two_presentations",
         label:
-          "Organized National Conference / Seminar / Symposium / Workshop / Presentation in two or more",
+          "Organised Seminar / Conference / Workshop / Symposium OR Presentation in two or more events",
         points: 3,
       },
       {
         value: "organized_international_or_govt_funded",
         label:
-          "Organized International Conference in Campus / Govt. Funded National Conference / Seminar / Symposium / Workshop",
+          "Organised National / International Conference on Campus OR Government-Funded Workshop",
         points: 4,
       },
     ],
   },
   {
     key: "fdp_stp",
-    heading: "VII. FDPs / STPs",
+    heading:
+      "VII. Faculty Development Programme (FDP) / Short-Term Programme (STP)",
     category: "Academics",
     options: [
-      { value: "fdp_stp_attended", label: "FDP / STP Attended", points: 1 },
+      { value: "fdp_stp_attended", label: "FDP Attended", points: 1 },
       { value: "fdp_stp_conducted", label: "FDP / STP Conducted", points: 2 },
       {
         value: "online_course_or_two_stp",
         label:
-          "Online Course Certificate like SWAYAM / NPTEL / Coursera etc / Two STP attended in campus or outside campus",
+          "Online Course Certificate like Symposium / MOOC etc. / STP Attended on or off Campus",
         points: 3,
       },
       {
         value: "mooc_developed",
-        label: "MOOC developed by faculty",
+        label: "MOOC Developed by Faculty",
         points: 4,
       },
     ],
@@ -190,35 +207,38 @@ const baseCriteria: PolicyCriterion[] = [
   {
     key: "research_project_consultancy",
     heading:
-      "VIII. Research & Consultancy Projects Granted During Assessment Year (Rs.)",
+      "VIII. Research Projects / Consultancy Grants Received During the Academic Year",
     category: "Research",
     options: [
-      { value: "10k_to_50k", label: "10,000 to 50,000", points: 1 },
-      { value: "51k_to_100k", label: "51,000 to 1,00,000", points: 2 },
-      { value: "100k_to_200k", label: "1,00,000 to 2,00,000", points: 3 },
-      { value: "above_2_lakhs", label: "Above 2 Lakhs", points: 4 },
+      { value: "10k_to_50k", label: "₹10,000 – ₹50,000", points: 1 },
+      { value: "51k_to_100k", label: "₹51,000 – ₹1,00,000", points: 2 },
+      { value: "100k_to_200k", label: "₹1,00,000 – ₹2,00,000", points: 3 },
+      { value: "above_2_lakhs", label: "Above ₹2,00,000", points: 4 },
     ],
   },
   {
     key: "research_guidance",
-    heading:
-      "IX. Research Guidance [M.Tech / M.Pharm / M.Sc. / MCA etc. (PG Thesis Guided)]",
+    heading: "IX. Research Guidance – M.Tech / M.Pharm / M.Sc. (PG Thesis)",
     category: "Research",
     options: [
-      { value: "one_complete_thesis", label: "1 Complete Thesis", points: 1 },
+      {
+        value: "one_complete_thesis",
+        label: "1 Complete Thesis Guided",
+        points: 1,
+      },
       {
         value: "one_thesis_one_paper",
-        label: "1 Complete Thesis + 1 Paper Published by Student",
+        label: "1 Complete Thesis + 1 Research Paper Published by the Student",
         points: 2,
       },
       {
         value: "two_thesis_one_paper",
-        label: "2 Complete Thesis + 1 Paper Published by Student",
+        label: "2 Complete Theses + 1 Research Paper Published by the Student",
         points: 3,
       },
       {
         value: "two_thesis_two_papers",
-        label: "2 Complete Thesis + 2 Papers Published by Student",
+        label: "2 Complete Theses + 2 Research Papers Published by the Student",
         points: 4,
       },
     ],
@@ -230,29 +250,30 @@ const baseCriteria: PolicyCriterion[] = [
     options: [
       {
         value: "participate_institutional",
-        label: "Participate in institutional events",
+        label: "Participation in Institutional Events",
         points: 1,
       },
       {
         value: "coordinator_team_leader",
-        label: "Coordinator / Team Leader",
+        label: "Coordinator / Team Leader of an Event",
         points: 2,
       },
       {
         value: "overall_coordinator",
-        label: "Overall Coordinator / Organizer",
+        label: "Overall Coordinator / Organiser of an Event",
         points: 3,
       },
       {
         value: "sponsored_event",
-        label: "Sponsored Event Organized",
+        label: "Overall Coordinator / Organiser of a Sponsored Event",
         points: 4,
       },
     ],
   },
   {
     key: "attendance",
-    heading: "XI. Attendance",
+    heading:
+      "XI. Student Attendance in Subjects Taught During the Last Semester",
     category: "Academics",
     options: [
       { value: "more_than_80", label: "More than 80%", points: 1 },
@@ -269,50 +290,62 @@ const baseCriteria: PolicyCriterion[] = [
       {
         value: "university_or_community",
         label:
-          "By University / Community Certificate or Award / Employee of the Month",
+          "University / Community Certificate or Award OR Employee of the Month",
         points: 1,
       },
-      { value: "state_award", label: "State Award", points: 2 },
+      { value: "state_award", label: "State-Level Award", points: 2 },
       {
         value: "national_award_or_two_times_employee",
-        label: "National Award / 2 Times Employee of the Month",
+        label: "National-Level Award OR 2 Times Employee of the Month",
         points: 3,
       },
       {
         value: "more_than_one_award",
-        label: "More than one Award in State or National",
+        label: "More than One Award at University / State / National Level",
         points: 4,
       },
     ],
   },
 ];
 
+// Criterion XIII (Head of Department Assessment, 1–4 points) is not a
+// self-assessed item — the HOD awards it as `additionalPoints` during review.
+// It is counted in FACULTY_MAX_POINTS (52) but has no row in baseCriteria.
+
 const hodOnlyCriteria: PolicyCriterion[] = [
   {
     key: "fee_recovery",
-    heading: "XIV. Fee Recovery",
+    heading: "XIV. Fee Recovery up to the Next Semester",
     category: "Co-curricular",
     options: [
       {
         value: "fifty_percent_next_sem",
-        label: "50% fee of next semester",
+        label: "Up to 50% of the Next Semester's Fee",
         points: 1,
       },
-      { value: "between_50_70", label: "50% to 70%", points: 2 },
-      { value: "between_70_80", label: "70% to 80%", points: 3 },
-      { value: "greater_than_80", label: "Greater than 80%", points: 4 },
+      { value: "between_50_70", label: "Above 50% – 70%", points: 2 },
+      { value: "between_70_80", label: "Above 70% – 80%", points: 3 },
+      { value: "greater_than_80", label: "Above 80%", points: 4 },
     ],
   },
   {
     key: "awards_outside_svgoi",
     heading:
-      "XV. Awards Earned by Department Students in Events Organized Outside SVGOI (1st, 2nd & 3rd Position)",
+      "XV. Awards Secured by Department Students in External Events (1st, 2nd or 3rd Position, outside SVGOI)",
     category: "Co-curricular",
     options: [
-      { value: "upto_2_awards", label: "Upto 2 awards", points: 1 },
-      { value: "winning_cash_prize", label: "Winning Cash Prize", points: 2 },
-      { value: "nit_iit", label: "NIT / IIT Awards", points: 3 },
-      { value: "more_than_2_awards", label: "More than 2 awards", points: 4 },
+      { value: "upto_2_awards", label: "Up to 2 Awards", points: 1 },
+      {
+        value: "winning_cash_prize",
+        label: "Award Secured with Cash Prize",
+        points: 2,
+      },
+      { value: "nit_iit", label: "Award Secured at NIT / IIT", points: 3 },
+      {
+        value: "more_than_2_awards",
+        label: "More than 2 Awards at NIT / IIT",
+        points: 4,
+      },
     ],
   },
   {
@@ -322,7 +355,7 @@ const hodOnlyCriteria: PolicyCriterion[] = [
     options: [
       {
         value: "fifty_percent",
-        label: "50% student intake all clear",
+        label: "50% of Students Clear the University Examination",
         points: 1,
       },
       { value: "sixty_percent", label: "60%", points: 2 },
@@ -332,39 +365,39 @@ const hodOnlyCriteria: PolicyCriterion[] = [
   },
   {
     key: "placement",
-    heading: "XVII. Placement",
+    heading: "XVII. Placement Performance",
     category: "Co-curricular",
     options: [
       {
         value: "thirty_percent",
-        label: "30% placement of passed students",
+        label: "30% Placement of Passed-Out Students",
         points: 1,
       },
-      { value: "between_30_50", label: "30 to 50%", points: 2 },
-      { value: "between_50_70", label: "50 to 70%", points: 3 },
+      { value: "between_30_50", label: "Above 30% – 50%", points: 2 },
+      { value: "between_50_70", label: "Above 50% – 70%", points: 3 },
       { value: "more_than_70", label: "More than 70%", points: 4 },
     ],
   },
   {
     key: "department_university_positions",
     heading:
-      "XVIII. Position Earned by Department Students in University Academics",
+      "XVIII. Academic Positions Secured by Department Students in University",
     category: "Academics",
     options: [
-      { value: "between_0_5_students", label: "0 – 5 students", points: 1 },
+      { value: "between_0_5_students", label: "0 – 5 Students", points: 1 },
       {
         value: "three_percent_students",
-        label: "3% of total students",
+        label: "3% of Total Students",
         points: 2,
       },
       {
         value: "five_percent_students",
-        label: "5% of total students",
+        label: "5% of Total Students",
         points: 3,
       },
       {
         value: "above_10_percent_students",
-        label: "Above 10% students",
+        label: "Above 10% of Total Students",
         points: 4,
       },
     ],
@@ -373,24 +406,14 @@ const hodOnlyCriteria: PolicyCriterion[] = [
 
 const facultyPolicy: AppraisalPolicy = {
   criteria: [...baseCriteria],
-  maxPoints: 48,
-  incrementBrackets: [
-    { min: 0, max: 16, incrementPercent: 5 },
-    { min: 17, max: 23, incrementPercent: 8 },
-    { min: 24, max: 34, incrementPercent: 10 },
-    { min: 35, incrementPercent: 15 },
-  ],
+  maxPoints: FACULTY_MAX_POINTS,
+  incrementBrackets: FACULTY_INCREMENT_BRACKETS,
 };
 
 const hodPolicy: AppraisalPolicy = {
   criteria: [...baseCriteria, ...hodOnlyCriteria],
-  maxPoints: 68,
-  incrementBrackets: [
-    { min: 0, max: 20, incrementPercent: 5 },
-    { min: 21, max: 34, incrementPercent: 8 },
-    { min: 35, max: 49, incrementPercent: 10 },
-    { min: 50, incrementPercent: 15 },
-  ],
+  maxPoints: HOD_MAX_POINTS,
+  incrementBrackets: HOD_INCREMENT_BRACKETS,
 };
 
 function policyForRoles(roles: string[] = []): AppraisalPolicy {
@@ -404,13 +427,7 @@ function criteriaMap(policy: AppraisalPolicy) {
 }
 
 function calculateIncrement(totalPoints: number, policy: AppraisalPolicy) {
-  const bracket = policy.incrementBrackets.find((entry) => {
-    const lower = totalPoints >= entry.min;
-    const upper =
-      typeof entry.max === "number" ? totalPoints <= entry.max : true;
-    return lower && upper;
-  });
-  return bracket?.incrementPercent ?? 0;
+  return incrementFromBrackets(totalPoints, policy.incrementBrackets);
 }
 
 function getEvidenceUploadDir() {
