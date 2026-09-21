@@ -66,6 +66,7 @@ function HodSelfRequestPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [draftKey, setDraftKey] = useState<string | null>(null);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -452,7 +453,12 @@ function HodSelfRequestPage() {
               return (
                 <section
                   key={criterion.key}
-                  className="rounded-2xl border border-border bg-surface p-5 shadow-sm"
+                  id={`criterion-${criterion.key}`}
+                  className={`rounded-2xl border bg-surface p-5 shadow-sm transition-colors ${
+                    showValidationErrors && !state?.selectedValue
+                      ? "border-danger bg-danger-bg/20"
+                      : "border-border"
+                  }`}
                 >
                   <div className="grid gap-4 lg:grid-cols-[1fr_200px]">
                     <div>
@@ -465,13 +471,20 @@ function HodSelfRequestPage() {
                       <select
                         value={state?.selectedValue || ""}
                         aria-label={`${criterion.heading} criteria`}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          if (showValidationErrors) {
+                            setShowValidationErrors(false);
+                          }
                           updateCriterionSelection(
                             criterion.key,
                             event.target.value,
-                          )
-                        }
-                        className="mt-1 h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-text"
+                          );
+                        }}
+                        className={`mt-1 h-10 w-full rounded-lg border bg-surface px-3 text-sm text-text ${
+                          showValidationErrors && !state?.selectedValue
+                            ? "border-danger ring-1 ring-danger"
+                            : "border-border"
+                        }`}
                       >
                         <option value="">Select criteria</option>
                         {criterion.options.map((option) => (
@@ -593,7 +606,30 @@ function HodSelfRequestPage() {
               </p>
               <button
                 type="button"
-                onClick={() => setPreviewOpen(true)}
+                onClick={() => {
+                  const unanswered =
+                    policy?.criteria.filter(
+                      (c) => !criteriaState[c.key]?.selectedValue,
+                    ) || [];
+                  if (unanswered.length > 0) {
+                    setShowValidationErrors(true);
+                    toast({
+                      title: "Incomplete Form",
+                      description: `Please answer all questions before submitting.`,
+                      variant: "error",
+                    });
+                    
+                    const firstError = document.getElementById(
+                      `criterion-${unanswered[0].key}`,
+                    );
+                    firstError?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                    return;
+                  }
+                  setPreviewOpen(true);
+                }}
                 disabled={submitting}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-5 text-sm font-medium text-text-inv shadow-sm transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               >

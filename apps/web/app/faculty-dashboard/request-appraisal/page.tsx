@@ -174,6 +174,7 @@ function FacultyAppraisalRequestPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [draftKey, setDraftKey] = useState<string | null>(null);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -264,6 +265,7 @@ function FacultyAppraisalRequestPage() {
     setCriteriaState({});
     setDraftKey(null);
     setDraftRestored(false);
+    setShowValidationErrors(false);
   }
 
   useEffect(() => {
@@ -336,6 +338,9 @@ function FacultyAppraisalRequestPage() {
         points: option?.points ?? 0,
       },
     }));
+    if (selectedValue) {
+      setShowValidationErrors(false);
+    }
   }
 
   function updateCriterionRemarks(criterionKey: string, remarks: string) {
@@ -415,14 +420,12 @@ function FacultyAppraisalRequestPage() {
     try {
       setSubmitting(true);
 
-      const items = policy.criteria
-        .map((criterion) => ({
-          criterionKey: criterion.key,
-          selectedValue: criteriaState[criterion.key].selectedValue,
-          evidence: criteriaState[criterion.key].evidence,
-          remarks: criteriaState[criterion.key].remarks?.trim() || null,
-        }))
-        .filter((item) => item.selectedValue !== "");
+      const items = policy.criteria.map((criterion) => ({
+        criterionKey: criterion.key,
+        selectedValue: criteriaState[criterion.key].selectedValue,
+        evidence: criteriaState[criterion.key].evidence,
+        remarks: criteriaState[criterion.key].remarks?.trim() || null,
+      }));
 
       await api.faculty.submitAppraisalRequest({ items });
       if (draftKey) {
@@ -552,17 +555,21 @@ function FacultyAppraisalRequestPage() {
             <div className="space-y-4">
               {policy?.criteria.map((criterion) => {
                 const state = criteriaState[criterion.key];
+                const hasError = showValidationErrors && !state?.selectedValue;
                 return (
                   <section
                     key={criterion.key}
-                    className="rounded-2xl border border-border bg-surface p-5 shadow-sm"
+                    id={`criterion-${criterion.key}`}
+                    className={`rounded-2xl border p-5 shadow-sm transition-colors ${
+                      hasError ? "border-red-500 bg-red-50/30" : "border-border bg-surface"
+                    }`}
                   >
                     <div className="grid gap-4 lg:grid-cols-[1fr_200px]">
                       <div>
-                        <h3 className="font-display text-lg font-semibold text-text">
+                        <h3 className={`font-display text-lg font-semibold ${hasError ? "text-red-700" : "text-text"}`}>
                           {criterion.heading}
                         </h3>
-                        <label className="mt-3 block text-sm font-medium text-text">
+                        <label className={`mt-3 block text-sm font-medium ${hasError ? "text-red-600" : "text-text"}`}>
                           Criteria
                         </label>
                         <select
@@ -574,7 +581,9 @@ function FacultyAppraisalRequestPage() {
                               event.target.value,
                             )
                           }
-                          className="mt-1 h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-text"
+                          className={`mt-1 h-10 w-full rounded-lg border bg-surface px-3 text-sm text-text ${
+                            hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-border"
+                          }`}
                         >
                           <option value="">Select criteria</option>
                           {criterion.options.map((option) => (
@@ -699,7 +708,28 @@ function FacultyAppraisalRequestPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setPreviewOpen(true)}
+                  onClick={() => {
+                    const unanswered = policy?.criteria.filter(
+                      (criterion) => !criteriaState[criterion.key]?.selectedValue
+                    );
+                    if (unanswered && unanswered.length > 0) {
+                      setShowValidationErrors(true);
+                      toast({
+                        title: "Incomplete Form",
+                        description: `Please answer all questions. Missing: ${unanswered[0].heading}`,
+                        variant: "error",
+                      });
+                      
+                      const element = document.getElementById(`criterion-${unanswered[0].key}`);
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }
+                      
+                      return;
+                    }
+                    setShowValidationErrors(false);
+                    setPreviewOpen(true);
+                  }}
                   disabled={submitting}
                   className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-5 text-sm font-medium text-text-inv shadow-sm transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >

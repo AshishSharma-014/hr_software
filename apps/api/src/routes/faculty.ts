@@ -84,18 +84,20 @@ const baseCriteria: PolicyCriterion[] = [
       { value: "between_40_60", label: "40% – 60%", points: 2 },
       { value: "between_60_80", label: "60% – 80%", points: 3 },
       { value: "above_80", label: "Above 80%", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
     key: "research_publications",
     heading:
-      "II. Research Publications – Scopus / SCI / ABDC / WoS / IEEE (Published / Accepted)",
+      "II. Research Publications – Scopus / SCI / ABDC / WoS / IEEE (Accepted)",
     category: "Research",
     options: [
       { value: "paper_1", label: "1 Research Paper", points: 1 },
       { value: "paper_2", label: "2 Research Papers", points: 2 },
       { value: "paper_3", label: "3 Research Papers", points: 3 },
       { value: "paper_4", label: "4 or more Research Papers", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -107,6 +109,7 @@ const baseCriteria: PolicyCriterion[] = [
       { value: "between_2_5", label: "2 to 5", points: 2 },
       { value: "between_5_8", label: "5 to 8", points: 3 },
       { value: "above_8", label: "Above 8", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -135,6 +138,7 @@ const baseCriteria: PolicyCriterion[] = [
         label: "1 National Book + 1 International Book",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -150,6 +154,7 @@ const baseCriteria: PolicyCriterion[] = [
         points: 3,
       },
       { value: "utility_patents_2", label: "2 Utility Patents", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -181,6 +186,7 @@ const baseCriteria: PolicyCriterion[] = [
           "Organised National / International Conference on Campus OR Government-Funded Workshop",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -202,6 +208,7 @@ const baseCriteria: PolicyCriterion[] = [
         label: "MOOC Developed by Faculty",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -214,6 +221,7 @@ const baseCriteria: PolicyCriterion[] = [
       { value: "51k_to_100k", label: "₹51,000 – ₹1,00,000", points: 2 },
       { value: "100k_to_200k", label: "₹1,00,000 – ₹2,00,000", points: 3 },
       { value: "above_2_lakhs", label: "Above ₹2,00,000", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -241,6 +249,7 @@ const baseCriteria: PolicyCriterion[] = [
         label: "2 Complete Theses + 2 Research Papers Published by the Student",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -268,6 +277,7 @@ const baseCriteria: PolicyCriterion[] = [
         label: "Overall Coordinator / Organiser of a Sponsored Event",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -280,6 +290,7 @@ const baseCriteria: PolicyCriterion[] = [
       { value: "more_than_90", label: "More than 90%", points: 2 },
       { value: "more_than_95", label: "More than 95%", points: 3 },
       { value: "hundred_percent", label: "100%", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -304,6 +315,7 @@ const baseCriteria: PolicyCriterion[] = [
         label: "More than One Award at University / State / National Level",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
 ];
@@ -326,6 +338,7 @@ const hodOnlyCriteria: PolicyCriterion[] = [
       { value: "between_50_70", label: "Above 50% – 70%", points: 2 },
       { value: "between_70_80", label: "Above 70% – 80%", points: 3 },
       { value: "greater_than_80", label: "Above 80%", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -346,6 +359,7 @@ const hodOnlyCriteria: PolicyCriterion[] = [
         label: "More than 2 Awards at NIT / IIT",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -361,6 +375,7 @@ const hodOnlyCriteria: PolicyCriterion[] = [
       { value: "sixty_percent", label: "60%", points: 2 },
       { value: "seventy_percent", label: "70%", points: 3 },
       { value: "eighty_percent", label: "80%", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -376,6 +391,7 @@ const hodOnlyCriteria: PolicyCriterion[] = [
       { value: "between_30_50", label: "Above 30% – 50%", points: 2 },
       { value: "between_50_70", label: "Above 50% – 70%", points: 3 },
       { value: "more_than_70", label: "More than 70%", points: 4 },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
   {
@@ -400,6 +416,7 @@ const hodOnlyCriteria: PolicyCriterion[] = [
         label: "Above 10% of Total Students",
         points: 4,
       },
+      { value: "none_of_the_above", label: "None of the above", points: 0 },
     ],
   },
 ];
@@ -1395,6 +1412,17 @@ router.post(
       parsed.items.forEach((entry) => {
         selectedByKey.set(entry.criterionKey, entry);
       });
+
+      for (const criterion of policy.criteria) {
+        const selected = selectedByKey.get(criterion.key);
+        if (!selected || !selected.selectedValue) {
+          res.status(400).json({
+            success: false,
+            message: `Please answer all questions. Missing answer for: ${criterion.heading}`,
+          });
+          return;
+        }
+      }
 
       if (cycleResult.status === "rejected") {
         throw cycleResult.reason;
