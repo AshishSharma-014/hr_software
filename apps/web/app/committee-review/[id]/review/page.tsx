@@ -14,6 +14,7 @@ import { withAuth } from "@/components/auth/withAuth";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui";
 import { api } from "@/lib/api";
 import { API_ORIGIN } from "@/lib/api-client";
 import { getPrimaryRole } from "@/lib/utils/routing";
@@ -291,6 +292,7 @@ function CommitteeReviewPage() {
   const [itemState, setItemState] = useState<Record<string, ItemState>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [savingCategory, setSavingCategory] = useState<ReviewCategory | null>(
     null,
   );
@@ -1228,7 +1230,7 @@ function CommitteeReviewPage() {
             {callerCategory ? (
               <button
                 type="button"
-                onClick={() => void approveCategory()}
+                onClick={() => setConfirmDialogOpen(true)}
                 disabled={saving || myCategoryApproved}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-5 text-sm font-medium text-text-inv shadow-sm transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -1246,7 +1248,7 @@ function CommitteeReviewPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => void submitReview()}
+                onClick={() => setConfirmDialogOpen(true)}
                 disabled={saving || savingCategory !== null}
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-5 text-sm font-medium text-text-inv shadow-sm transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -1288,6 +1290,22 @@ function CommitteeReviewPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        title="Confirm Submission"
+        description="Are you sure you want to submit your review? You cannot change the scores after this action."
+        confirmLabel={saving ? "Submitting..." : "Submit Review"}
+        onCancel={() => setConfirmDialogOpen(false)}
+        onConfirm={() => {
+          setConfirmDialogOpen(false);
+          if (callerCategory) {
+            void approveCategory();
+          } else {
+            void submitReview();
+          }
+        }}
+      />
     </AppShell>
   );
 }

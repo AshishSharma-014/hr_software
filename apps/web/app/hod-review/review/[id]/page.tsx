@@ -118,6 +118,7 @@ function HodReviewDetailPage() {
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showOverallRemarkError, setShowOverallRemarkError] = useState(false);
 
@@ -700,7 +701,7 @@ function HodReviewDetailPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void submitReview()}
+                  onClick={() => setSubmitDialogOpen(true)}
                   disabled={saving || rejecting}
                   className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-5 text-sm font-medium text-text-inv shadow-sm transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -754,6 +755,18 @@ function HodReviewDetailPage() {
         confirmLabel={rejecting ? "Rejecting..." : "Confirm Reject"}
         onCancel={() => { setRejectDialogOpen(false); setRejectReason(""); }}
         onConfirm={() => void rejectAppraisal()}
+      />
+
+      <ConfirmDialog
+        open={submitDialogOpen}
+        title="Confirm Submission"
+        description="Are you sure you want to submit your HOD review? You will not be able to change the scores after submitting."
+        confirmLabel={saving ? "Submitting..." : "Submit HOD Review"}
+        onCancel={() => setSubmitDialogOpen(false)}
+        onConfirm={() => {
+          setSubmitDialogOpen(false);
+          void submitReview();
+        }}
       />
     </AppShell>
   );

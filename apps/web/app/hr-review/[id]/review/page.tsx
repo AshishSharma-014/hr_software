@@ -70,6 +70,7 @@ function HRReviewDetail() {
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [itemState, setItemState] = useState<ItemState>({});
 
@@ -593,7 +594,7 @@ function HRReviewDetail() {
             </button>
             <button
               type="button"
-              onClick={submit}
+              onClick={() => setSubmitDialogOpen(true)}
               disabled={saving || rejecting}
               className="inline-flex items-center gap-2 rounded-lg bg-brand px-6 py-2 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
             >
@@ -626,6 +627,18 @@ function HRReviewDetail() {
         confirmLabel={rejecting ? "Rejecting..." : "Confirm Reject"}
         onCancel={() => { setRejectDialogOpen(false); setRejectReason(""); }}
         onConfirm={() => void reject()}
+      />
+
+      <ConfirmDialog
+        open={submitDialogOpen}
+        title="Confirm Submission"
+        description="Are you sure you want to forward this appraisal to the Admin? You will not be able to change it after submitting."
+        confirmLabel={saving ? "Forwarding..." : "Forward to Admin"}
+        onCancel={() => setSubmitDialogOpen(false)}
+        onConfirm={() => {
+          setSubmitDialogOpen(false);
+          void submit();
+        }}
       />
     </div>
   );

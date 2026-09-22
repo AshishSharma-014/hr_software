@@ -15,7 +15,8 @@
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",
     "bootstrap": "pnpm install",
-    "postinstall": "pnpm --filter @svgoi/api prisma:generate"
+    "postinstall": "pnpm --filter @svgoi/api prisma:generate",
+    "prisma:studio": "pnpm --filter @svgoi/api exec prisma studio"
   },
   "devDependencies": {
     "turbo": "^1.9.0",
