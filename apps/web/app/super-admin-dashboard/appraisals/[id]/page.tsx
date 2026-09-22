@@ -273,6 +273,102 @@ function SuperAdminAppraisalDetail() {
           </div>
         </div>
 
+        {/* Appraisal Review Breakdown */}
+        <div className="rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="border-b border-border p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-text-3">
+              Appraisal Breakdown Report
+            </h2>
+          </div>
+          <div className="overflow-x-auto p-0">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-surface-2 text-xs uppercase text-text-3">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Criterion</th>
+                  <th className="px-6 py-4 font-semibold">Faculty Demand</th>
+                  <th className="px-6 py-4 font-semibold">HOD Review</th>
+                  <th className="px-6 py-4 font-semibold">Committee Review</th>
+                  <th className="px-6 py-4 font-semibold">HR Review</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {appraisal.items.map((item) => {
+                  let parsed = {} as any;
+                  try {
+                    if (item.notes) parsed = JSON.parse(item.notes);
+                  } catch (e) {}
+
+                  // Format key like "academic_performance" -> "Academic Performance"
+                  const criterionName = item.key
+                    .split('_')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+
+                  return (
+                    <tr key={item.id} className="hover:bg-surface-2/50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-text">{criterionName}</td>
+                      <td className="px-6 py-4 text-text-2">{item.points}</td>
+                      <td className="px-6 py-4">
+                        <span className="font-semibold">{parsed?.hodReview?.approvedPoints ?? "—"}</span>
+                        {parsed?.hodReview?.remark && (
+                          <div className="text-xs text-text-3 italic mt-1">({parsed.hodReview.remark})</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-semibold">{parsed?.committeeReview?.approvedPoints ?? "—"}</span>
+                        {parsed?.committeeReview?.remark && (
+                          <div className="text-xs text-text-3 italic mt-1">({parsed.committeeReview.remark})</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-semibold">{parsed?.hrReview?.approvedPoints ?? "—"}</span>
+                        {parsed?.hrReview?.remark && (
+                          <div className="text-xs text-text-3 italic mt-1">({parsed.hrReview.remark})</div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                
+                {/* Total Row */}
+                {(() => {
+                  const totals = appraisal.items.reduce(
+                    (acc, item) => {
+                      acc.faculty += item.points || 0;
+                      let parsed = {} as any;
+                      try {
+                        if (item.notes) parsed = JSON.parse(item.notes);
+                      } catch (e) {}
+                      
+                      if (parsed?.hodReview?.approvedPoints != null) {
+                        acc.hod += Number(parsed.hodReview.approvedPoints);
+                      }
+                      if (parsed?.committeeReview?.approvedPoints != null) {
+                        acc.committee += Number(parsed.committeeReview.approvedPoints);
+                      }
+                      if (parsed?.hrReview?.approvedPoints != null) {
+                        acc.hr += Number(parsed.hrReview.approvedPoints);
+                      }
+                      return acc;
+                    },
+                    { faculty: 0, hod: 0, committee: 0, hr: 0 }
+                  );
+
+                  return (
+                    <tr className="bg-surface-2 font-bold text-text">
+                      <td className="px-6 py-4 uppercase">Total</td>
+                      <td className="px-6 py-4">{totals.faculty}</td>
+                      <td className="px-6 py-4">{totals.hod}</td>
+                      <td className="px-6 py-4">{totals.committee}</td>
+                      <td className="px-6 py-4">{totals.hr}</td>
+                    </tr>
+                  );
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Salary Information */}
         <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-widest text-text-3">
