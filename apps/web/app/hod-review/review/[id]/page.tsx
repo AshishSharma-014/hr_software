@@ -119,6 +119,7 @@ function HodReviewDetailPage() {
   const [rejecting, setRejecting] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showOverallRemarkError, setShowOverallRemarkError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -248,6 +249,16 @@ function HodReviewDetailPage() {
       toast({
         title: "Error",
         description: "Additional points remark is required.",
+        variant: "error",
+      });
+      return;
+    }
+
+    if (!overallRemark.trim()) {
+      setShowOverallRemarkError(true);
+      toast({
+        title: "Error",
+        description: "Overall remark is required.",
         variant: "error",
       });
       return;
@@ -637,12 +648,17 @@ function HodReviewDetailPage() {
           <>
             <div className="mb-4">
               <label className="mb-1.5 block text-sm font-medium text-text">
-                Overall Remark (Optional)
+                Overall Remark (Required)
               </label>
               <textarea
                 value={overallRemark}
-                onChange={(event) => setOverallRemark(event.target.value)}
-                className="min-h-24 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
+                onChange={(event) => {
+                  setOverallRemark(event.target.value);
+                  if (showOverallRemarkError) setShowOverallRemarkError(false);
+                }}
+                className={`min-h-24 w-full rounded-lg border bg-surface px-3 py-2 text-sm text-text ${
+                  showOverallRemarkError ? "border-danger focus:outline-none focus:ring-1 focus:ring-danger" : "border-border"
+                }`}
                 placeholder="Final review note"
               />
             </div>

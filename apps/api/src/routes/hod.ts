@@ -29,7 +29,7 @@ const hodReviewSchema = z.object({
     .min(1),
   additionalPoints: z.number().int().min(0).max(4).default(0),
   additionalPointsRemark: z.string().optional(),
-  overallRemark: z.string().optional(),
+  overallRemark: z.string().min(1, "Overall remark is required"),
   // Memo issues raised against the faculty during the cycle. Governed by the
   // Co-curricular committee but recorded here, since the HOD holds the record.
   memoIssues: z.number().int().min(0).max(50).default(0),
