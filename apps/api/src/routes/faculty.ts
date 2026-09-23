@@ -177,13 +177,13 @@ const baseCriteria: PolicyCriterion[] = [
       {
         value: "organized_national_or_two_presentations",
         label:
-          "Organised Seminar / Conference / Workshop / Symposium OR Presentation in two or more events",
+          "Organised Seminar/ Conference/ Workshop/ Symposium OR Paper Presentation in two or more events/ Invited as a Keynote Speaker / Resource Person",
         points: 3,
       },
       {
         value: "organized_international_or_govt_funded",
         label:
-          "Organised National / International Conference on Campus OR Government-Funded Workshop",
+          "Organised National/ International Conference/ Government-Funded Workshop on Campus OR Participant as Session Chair in a Conference",
         points: 4,
       },
       { value: "none_of_the_above", label: "None of the above", points: 0 },
@@ -195,12 +195,12 @@ const baseCriteria: PolicyCriterion[] = [
       "VII. Faculty Development Programme (FDP) / Short-Term Programme (STP)",
     category: "Academics",
     options: [
-      { value: "fdp_stp_attended", label: "FDP Attended", points: 1 },
-      { value: "fdp_stp_conducted", label: "FDP / STP Conducted", points: 2 },
+      { value: "fdp_stp_attended", label: "FDP / STP Attended", points: 1 },
+      { value: "fdp_stp_conducted", label: "Organised FDP/ STP OR Attended FDP/ STP conducted by Government Institution", points: 2 },
       {
         value: "online_course_or_two_stp",
         label:
-          "Online Course Certificate like Symposium / MOOC etc. / STP Attended on or off Campus",
+          "Online Course Certificate like Symposium / MOOC etc",
         points: 3,
       },
       {
