@@ -737,6 +737,10 @@ export const api = {
       unwrap<Record<string, unknown>>(
         apiClient.post(`/admin/appraisals/${id}/approve`, data),
       ),
+    resetToCommittee: (id: string) =>
+      unwrap<Record<string, unknown>>(
+        apiClient.post(`/admin/appraisals/${id}/reset-to-committee`),
+      ),
   },
 };
 

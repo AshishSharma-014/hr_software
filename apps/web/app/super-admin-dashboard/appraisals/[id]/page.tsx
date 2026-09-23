@@ -48,6 +48,7 @@ interface AppraisalDetail {
   }>;
   superAdminApprovedPercent?: number | null;
   superAdminRemark?: string | null;
+  hodRemarks?: string | null;
 }
 
 function SuperAdminAppraisalDetail() {
@@ -70,6 +71,8 @@ function SuperAdminAppraisalDetail() {
   const [adjustedPercent, setAdjustedPercent] = useState<number | undefined>();
   const [remark, setRemark] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -142,6 +145,34 @@ function SuperAdminAppraisalDetail() {
       });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleReset() {
+    if (!appraisal) return;
+
+    try {
+      setResetting(true);
+
+      await api.superAdmin.resetToCommittee(appraisal.id);
+
+      toast({
+        title: "Success",
+        description: "Appraisal reset successfully. Sent back to Committee Review.",
+        variant: "success",
+      });
+      setTimeout(() => {
+        router.push("/super-admin-dashboard/appraisals");
+      }, 2000);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description:
+          err?.response?.data?.message || err?.message || "Failed to reset",
+        variant: "error",
+      });
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -284,6 +315,7 @@ function SuperAdminAppraisalDetail() {
             <table className="w-full text-left text-sm">
               <thead className="bg-surface-2 text-xs uppercase text-text-3">
                 <tr>
+                  <th className="px-6 py-4 font-semibold w-16">S.No</th>
                   <th className="px-6 py-4 font-semibold">Criterion</th>
                   <th className="px-6 py-4 font-semibold">Faculty Demand</th>
                   <th className="px-6 py-4 font-semibold">HOD Review</th>
@@ -292,7 +324,7 @@ function SuperAdminAppraisalDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {appraisal.items.map((item) => {
+                {appraisal.items.map((item, index) => {
                   let parsed = {} as any;
                   try {
                     if (item.notes) parsed = JSON.parse(item.notes);
@@ -306,6 +338,7 @@ function SuperAdminAppraisalDetail() {
 
                   return (
                     <tr key={item.id} className="hover:bg-surface-2/50 transition-colors">
+                      <td className="px-6 py-4 text-text-2">{index + 1}</td>
                       <td className="px-6 py-4 font-medium text-text">{criterionName}</td>
                       <td className="px-6 py-4 text-text-2">{item.points}</td>
                       <td className="px-6 py-4">
@@ -329,6 +362,84 @@ function SuperAdminAppraisalDetail() {
                     </tr>
                   );
                 })}
+                
+                {/* HOD Remarks and Memo Issues for Normal Faculty */}
+                {!appraisal.items.some((item) =>
+                  [
+                    "fee_recovery",
+                    "awards_outside_svgoi",
+                    "overall_university_result",
+                    "placement",
+                    "department_university_positions",
+                  ].includes(item.key)
+                ) && (
+                  <>
+                    <tr className="hover:bg-surface-2/50 transition-colors">
+                      <td className="px-6 py-4 text-text-2">13</td>
+                      <td className="px-6 py-4 font-medium text-text">HOD's Remarks</td>
+                      <td className="px-6 py-4 text-text-2">—</td>
+                      <td className="px-6 py-4">
+                        {(appraisal.hodRemarks && typeof (() => {
+                          try { return JSON.parse(appraisal.hodRemarks).additionalPoints; } catch { return undefined; }
+                        })() === "number") ? (
+                          <>
+                            <span className="font-semibold">
+                              {(() => {
+                                try { return JSON.parse(appraisal.hodRemarks).additionalPoints; } catch { return undefined; }
+                              })()}
+                            </span>
+                            {(() => {
+                              try { return JSON.parse(appraisal.hodRemarks).additionalPointsRemark; } catch { return null; }
+                            })() && (
+                              <div className="text-xs text-text-3 italic mt-1">
+                                {(() => {
+                                  try { return JSON.parse(appraisal.hodRemarks).additionalPointsRemark; } catch { return null; }
+                                })()}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="font-semibold">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-text-2">—</td>
+                      <td className="px-6 py-4 text-text-2">—</td>
+                    </tr>
+                    <tr className="hover:bg-surface-2/50 transition-colors">
+                      <td className="px-6 py-4 text-text-2">14</td>
+                      <td className="px-6 py-4 font-medium text-text">Memo Issues / Penalty</td>
+                      <td className="px-6 py-4 text-text-2">—</td>
+                      <td className="px-6 py-4">
+                        {(appraisal.hodRemarks && typeof (() => {
+                          try { return JSON.parse(appraisal.hodRemarks).memoIssues; } catch { return undefined; }
+                        })() === "number") ? (
+                          <>
+                            <span className="font-semibold">
+                              {(() => {
+                                try { return JSON.parse(appraisal.hodRemarks).memoIssues; } catch { return undefined; }
+                              })()}
+                            </span>
+                            {(() => {
+                              try { return JSON.parse(appraisal.hodRemarks).memoNote; } catch { return null; }
+                            })() && (
+                              <div className="text-xs text-text-3 italic mt-1">
+                                {(() => {
+                                  try { return JSON.parse(appraisal.hodRemarks).memoNote; } catch { return null; }
+                                })()}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="font-semibold">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-text-2">—</td>
+                      <td className="px-6 py-4 text-text-2">—</td>
+                    </tr>
+                  </>
+                )}
+
+
                 
                 {/* Total Row */}
                 {(() => {
@@ -356,7 +467,7 @@ function SuperAdminAppraisalDetail() {
 
                   return (
                     <tr className="bg-surface-2 font-bold text-text">
-                      <td className="px-6 py-4 uppercase">Total</td>
+                      <td colSpan={2} className="px-6 py-4 uppercase text-right">Total</td>
                       <td className="px-6 py-4">{totals.faculty}</td>
                       <td className="px-6 py-4">{totals.hod}</td>
                       <td className="px-6 py-4">{totals.committee}</td>
@@ -368,6 +479,33 @@ function SuperAdminAppraisalDetail() {
             </table>
           </div>
         </div>
+
+        {/* HOD Overall Remark */}
+        {!appraisal.items.some((item) =>
+          [
+            "fee_recovery",
+            "awards_outside_svgoi",
+            "overall_university_result",
+            "placement",
+            "department_university_positions",
+          ].includes(item.key)
+        ) && (
+          <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-widest text-text-3 mb-3">
+              HOD's Overall Remark
+            </p>
+            <div className="rounded-lg border border-border bg-bg p-4 text-sm text-text-2 whitespace-pre-wrap">
+              {(() => {
+                try {
+                  const remark = appraisal.hodRemarks ? JSON.parse(appraisal.hodRemarks).overallRemark : null;
+                  return remark ? remark : <span className="font-semibold">—</span>;
+                } catch {
+                  return <span className="font-semibold">—</span>;
+                }
+              })()}
+            </div>
+          </div>
+        )}
 
         {/* Salary Information */}
         <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
@@ -467,11 +605,21 @@ function SuperAdminAppraisalDetail() {
                 <button
                   type="button"
                   onClick={() => setConfirmOpen(true)}
-                  disabled={saving}
+                  disabled={saving || resetting}
                   className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-success px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? "Approving..." : "Approve Appraisal"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={saving || resetting}
+                  className="flex items-center justify-center rounded-lg bg-danger px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => setConfirmResetOpen(true)}
+                >
+                  {resetting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {resetting ? "Resetting..." : "Reset"}
                 </button>
 
                 <Link
@@ -581,6 +729,25 @@ function SuperAdminAppraisalDetail() {
         onConfirm={() => {
           setConfirmOpen(false);
           void handleApprove();
+        }}
+      />
+
+      {/* Reset Review Confirmation */}
+      <ConfirmDialog
+        open={confirmResetOpen}
+        title="Confirm Reset Review"
+        description={
+          <div className="space-y-4">
+            <p>
+              This will send the appraisal back to <span className="font-semibold text-text">Committee Review</span> and clear the previous Committee and HR reviews. The original Faculty/HOD submission will be preserved.
+            </p>
+          </div>
+        }
+        confirmLabel={resetting ? "Resetting..." : "Reset Review"}
+        onCancel={() => setConfirmResetOpen(false)}
+        onConfirm={() => {
+          setConfirmResetOpen(false);
+          void handleReset();
         }}
       />
     </div>

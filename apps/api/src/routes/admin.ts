@@ -533,6 +533,7 @@ router.get(
             select: { id: true, name: true, startDate: true, endDate: true },
           },
           items: { select: { id: true, key: true, points: true, notes: true } },
+          hodRemarks: true,
         },
       });
 
@@ -564,6 +565,7 @@ router.get(
           revisedSalary,
           superAdminApprovedPercent: appraisal.superAdminApprovedPercent,
           superAdminRemark: appraisal.superAdminRemark,
+          hodRemarks: appraisal.hodRemarks,
         },
       });
     } catch (error) {
@@ -682,6 +684,155 @@ router.post(
           status: "FULLY_APPROVED",
           finalPercent,
           revisedSalary,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// Super Admin resets an appraisal back to Committee Review
+router.post(
+  "/appraisals/:appraisalId/reset-to-committee",
+  authenticateRequest,
+  requireRoles("SUPER_ADMIN"),
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const actorId = req.auth?.sub;
+      if (!actorId) {
+        res
+          .status(401)
+          .json({ success: false, message: "Authentication required" });
+        return;
+      }
+
+      const { appraisalId } = req.params;
+
+      const appraisal = await prisma.appraisal.findUnique({
+        where: { id: appraisalId },
+        select: {
+          id: true,
+          status: true,
+          items: {
+            select: {
+              id: true,
+              key: true,
+              notes: true,
+              points: true,
+            },
+          },
+        },
+      });
+
+      if (!appraisal) {
+        res
+          .status(404)
+          .json({ success: false, message: "Appraisal not found" });
+        return;
+      }
+
+      // 1. Verify status is one of the valid post-committee statuses
+      if (!SUPER_ADMIN_DASHBOARD_STATUSES.includes(appraisal.status)) {
+        res.status(400).json({
+          success: false,
+          message: "Appraisal cannot be reset from its current status.",
+        });
+        return;
+      }
+
+      // 2. Reject if this is an HOD self-appraisal
+      const HOD_CRITERIA_KEYS = [
+        "fee_recovery",
+        "awards_outside_svgoi",
+        "overall_university_result",
+        "placement",
+        "department_university_positions",
+      ];
+      const isHodSelfAppraisal = appraisal.items.some((item) =>
+        HOD_CRITERIA_KEYS.includes(item.key),
+      );
+
+      // 3. Process the items to restore points and strip hr/committee reviews
+      const itemsToUpdate = appraisal.items.map((item) => {
+        let parsedNotes: any = {};
+        if (item.notes) {
+          try {
+            parsedNotes = JSON.parse(item.notes);
+          } catch (e) {
+            // Ignore
+          }
+        }
+
+        let newPoints = item.points;
+        if (isHodSelfAppraisal) {
+          if (parsedNotes?.originalSubmittedPoints !== undefined) {
+            newPoints = Number(parsedNotes.originalSubmittedPoints);
+          }
+        } else {
+          if (parsedNotes?.hodReview?.approvedPoints !== undefined) {
+            newPoints = Number(parsedNotes.hodReview.approvedPoints);
+          }
+        }
+
+        // Delete previous committee and hr reviews
+        delete parsedNotes.committeeReview;
+        delete parsedNotes.hrReview;
+
+        return {
+          id: item.id,
+          points: newPoints,
+          notes: JSON.stringify(parsedNotes),
+        };
+      });
+
+      const previousStatus = appraisal.status;
+
+      await Promise.all([
+        prisma.$transaction(async (transaction) => {
+          // Update appraisal status and clear review fields
+          await transaction.appraisal.update({
+            where: { id: appraisalId },
+            data: {
+              status: "COMMITTEE_REVIEW",
+              committeeNotes: null,
+              adminRemark: null,
+              superAdminRemark: null,
+              superAdminApprovedPercent: null,
+            },
+          });
+
+          // Delete CategoryApproval records
+          await transaction.categoryApproval.deleteMany({
+            where: { appraisalId },
+          });
+
+          // Update each AppraisalItem
+          for (const item of itemsToUpdate) {
+            await transaction.appraisalItem.update({
+              where: { id: item.id },
+              data: {
+                points: item.points,
+                notes: item.notes,
+              },
+            });
+          }
+        }),
+        writeAuditLog({
+          actorId,
+          action: "appraisal.super_admin.reset_to_committee",
+          resource: "Appraisal",
+          resourceId: appraisalId,
+          meta: { previousStatus },
+        }),
+      ]);
+
+      res.json({
+        success: true,
+        message: "Appraisal reset to committee review successfully",
+        data: {
+          appraisalId,
+          status: "COMMITTEE_REVIEW",
         },
       });
     } catch (error) {
