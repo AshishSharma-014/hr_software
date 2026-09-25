@@ -121,6 +121,7 @@ function HodReviewDetailPage() {
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showOverallRemarkError, setShowOverallRemarkError] = useState(false);
+  const [showAdditionalPointsRemarkError, setShowAdditionalPointsRemarkError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -246,12 +247,15 @@ function HodReviewDetailPage() {
       }
     }
 
-    if (additionalPoints > 0 && !additionalPointsRemark.trim()) {
+    if (!additionalPointsRemark.trim()) {
+      setShowAdditionalPointsRemarkError(true);
       toast({
         title: "Error",
-        description: "Additional points remark is required.",
+        description: "Remarks for HOD's score is required.",
         variant: "error",
       });
+      const el = document.getElementById("hod-remark-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -262,6 +266,8 @@ function HodReviewDetailPage() {
         description: "Overall remark is required.",
         variant: "error",
       });
+      const el = document.getElementById("overall-remark-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -494,7 +500,10 @@ function HodReviewDetailPage() {
         })}
 
         {/* XIII. HOD's Remarks — rendered as a criterion item */}
-        <section className="rounded-2xl border border-brand/20 bg-surface p-5 shadow-sm">
+        <section
+          id="hod-remark-section"
+          className="rounded-2xl border border-brand/20 bg-surface p-5 shadow-sm"
+        >
           <h3 className="font-display text-lg font-semibold text-text">
             XIII. HOD&apos;s Remarks
           </h3>
@@ -522,22 +531,28 @@ function HodReviewDetailPage() {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-text">
-                  Remarks for HOD&apos;s Score{" "}
-                  {additionalPoints > 0 ? "(Required)" : "(Optional)"}
+                <label
+                  className={`mb-1.5 block text-sm font-medium ${
+                    showAdditionalPointsRemarkError ? "text-red-600" : "text-text"
+                  }`}
+                >
+                  Remarks for HOD&apos;s Score (Required)
                 </label>
                 <textarea
                   value={additionalPointsRemark}
                   rows={2}
-                  onChange={(event) =>
-                    setAdditionalPointsRemark(event.target.value)
-                  }
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text"
-                  placeholder={
-                    additionalPoints > 0
-                      ? "Reason for additional score (required)"
-                      : "Optional remark"
-                  }
+                  onChange={(event) => {
+                    setAdditionalPointsRemark(event.target.value);
+                    if (event.target.value.trim()) {
+                      setShowAdditionalPointsRemarkError(false);
+                    }
+                  }}
+                  className={`w-full rounded-lg border bg-surface px-3 py-2 text-sm text-text ${
+                    showAdditionalPointsRemarkError
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      : "border-border"
+                  }`}
+                  placeholder="Reason for score (required)"
                 />
               </div>
             </div>
@@ -644,7 +659,7 @@ function HodReviewDetailPage() {
         </section>
       </div>
 
-      <section className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <section id="overall-remark-section" className="mt-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
         {canEdit ? (
           <>
             <div className="mb-4">

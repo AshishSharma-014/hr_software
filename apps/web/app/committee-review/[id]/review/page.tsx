@@ -659,6 +659,19 @@ function CommitteeReviewPage() {
       buildItemPayload(item, itemState),
     );
 
+    const unsavedCategories = reviewSections
+      .filter((section) => !savedSections[section.category])
+      .map((section) => section.category);
+
+    if (unsavedCategories.length > 0) {
+      toast({
+        title: "Error",
+        description: `Please save all categories before finalizing: ${unsavedCategories.join(", ")}`,
+        variant: "error",
+      });
+      return;
+    }
+
     if (validateItemRemarks(appraisal.items)) {
       toast({
         title: "Error",
@@ -1186,18 +1199,24 @@ function CommitteeReviewPage() {
               (a) => ENUM_TO_CATEGORY[a.category] === category,
             );
             const approved = !!row?.approved;
+            const saved = savedSections[category];
+
             return (
               <div
                 key={category}
                 className={`rounded-xl border p-3 ${
                   approved
                     ? "border-emerald-200 bg-emerald-50"
+                    : saved
+                    ? "border-blue-200 bg-blue-50"
                     : "border-border bg-bg"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   {approved ? (
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  ) : saved ? (
+                    <CheckCircle2 className="h-4 w-4 text-blue-600" />
                   ) : (
                     <span className="h-4 w-4 rounded-full border-2 border-border" />
                   )}
@@ -1210,6 +1229,8 @@ function CommitteeReviewPage() {
                     ? row?.approvedBy
                       ? `Approved by ${row.approvedBy.firstName} ${row.approvedBy.lastName}`
                       : "Approved"
+                    : saved
+                    ? "Saved (Draft)"
                     : "Pending"}
                 </p>
               </div>
