@@ -340,7 +340,7 @@ function SuperAdminAppraisalDetail() {
                     <tr key={item.id} className="hover:bg-surface-2/50 transition-colors">
                       <td className="px-6 py-4 text-text-2">{index + 1}</td>
                       <td className="px-6 py-4 font-medium text-text">{criterionName}</td>
-                      <td className="px-6 py-4 text-text-2">{item.points}</td>
+                      <td className="px-6 py-4 text-text-2">{parsed?.hodReview?.originalPoints ?? item.points}</td>
                       <td className="px-6 py-4">
                         <span className="font-semibold">{parsed?.hodReview?.approvedPoints ?? "—"}</span>
                         {parsed?.hodReview?.remark && (
@@ -445,12 +445,13 @@ function SuperAdminAppraisalDetail() {
                 {(() => {
                   const totals = appraisal.items.reduce(
                     (acc, item) => {
-                      acc.faculty += item.points || 0;
                       let parsed = {} as any;
                       try {
                         if (item.notes) parsed = JSON.parse(item.notes);
                       } catch (e) {}
                       
+                      acc.faculty += (parsed?.hodReview?.originalPoints ?? item.points) || 0;
+
                       if (parsed?.hodReview?.approvedPoints != null) {
                         acc.hod += Number(parsed.hodReview.approvedPoints);
                       }
@@ -465,9 +466,24 @@ function SuperAdminAppraisalDetail() {
                     { faculty: 0, hod: 0, committee: 0, hr: 0 }
                   );
 
+                  let additionalPoints = 0;
+                  let memoDeduction = 0;
+                  try {
+                    if (appraisal.hodRemarks) {
+                      const remarks = JSON.parse(appraisal.hodRemarks);
+                      additionalPoints = Number(remarks.additionalPoints) || 0;
+                      memoDeduction = Number(remarks.memoDeductionPoints) || 0;
+                    }
+                  } catch (e) {}
+
+                  // Apply the additional points and deductions to all downstream reviewers
+                  totals.hod = totals.hod + additionalPoints - memoDeduction;
+                  totals.committee = totals.committee + additionalPoints - memoDeduction;
+                  totals.hr = totals.hr + additionalPoints - memoDeduction;
+
                   return (
                     <tr className="bg-surface-2 font-bold text-text">
-                      <td colSpan={2} className="px-6 py-4 uppercase text-right">Total</td>
+                      <td colSpan={2} className="px-6 py-4 uppercase text-right">Total Net Score</td>
                       <td className="px-6 py-4">{totals.faculty}</td>
                       <td className="px-6 py-4">{totals.hod}</td>
                       <td className="px-6 py-4">{totals.committee}</td>

@@ -267,5 +267,7 @@ export interface FacultyAppraisalRequestStatus {
   status?: AppraisalStatus;
   submittedAt?: string | null;
   totalPoints?: number | null;
+  totalRequestedPoints?: number | null;
+  totalApprovedPoints?: number | null;
   incrementPercent?: number | null;
 }

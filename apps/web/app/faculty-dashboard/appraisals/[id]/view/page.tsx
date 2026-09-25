@@ -213,7 +213,7 @@ function ViewSubmittedAppraisalPage() {
 
       <div className="grid gap-6">
         <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-text-3">
                 Status
@@ -230,9 +230,17 @@ function ViewSubmittedAppraisalPage() {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-text-3">
+                Requested Score
+              </p>
+              <p className="mt-2 text-sm font-medium text-text">
+                {appraisal.totalRequestedScore != null ? appraisal.totalRequestedScore : "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-text-3">
                 {["HR_FINALIZED", "SUPER_ADMIN_PENDING", "FULLY_APPROVED"].includes(appraisal.status)
                   ? "Final Score"
-                  : "Your Score"}
+                  : "Live Score"}
               </p>
               <p className="mt-2 text-sm font-medium text-text">
                 {appraisal.finalScore != null ? appraisal.finalScore : "-"}
@@ -250,8 +258,30 @@ function ViewSubmittedAppraisalPage() {
             </div>
           </div>
         </div>
-
         <div className="space-y-4">
+          {appraisal.hodRemarks?.additionalPoints ? (
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h3 className="font-display text-lg font-semibold text-text">
+                    Additional Points (HOD)
+                  </h3>
+                  <p className="mt-2 text-sm text-text-2">
+                    Remark: {appraisal.hodRemarks.additionalPointsRemark || "No remark provided"}
+                  </p>
+                </div>
+                <div className="shrink-0 rounded-xl border border-border bg-surface-2 px-4 py-3 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-text-3">
+                    Points Added
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-text">
+                    +{appraisal.hodRemarks.additionalPoints}
+                  </p>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
           {appraisal.items.map((item) => (
             <section
               key={item.id}

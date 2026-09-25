@@ -346,11 +346,15 @@ function CommitteeReviewPage() {
             facultyPoints:
               typeof hodReview?.originalPoints === "number"
                 ? Number(hodReview.originalPoints)
-                : item.points,
+                : typeof parsed.originalSubmittedPoints === "number"
+                  ? Number(parsed.originalSubmittedPoints)
+                  : item.points,
             hodApprovedPoints:
               typeof hodReview?.approvedPoints === "number"
                 ? Number(hodReview.approvedPoints)
-                : item.points,
+                : typeof parsed.originalSubmittedPoints === "number"
+                  ? Number(parsed.originalSubmittedPoints)
+                  : item.points,
             hodRemark:
               typeof hodReview?.remark === "string"
                 ? String(hodReview.remark)

@@ -851,6 +851,9 @@ router.get(
           submittedAt: true,
           finalScore: true,
           finalPercent: true,
+          items: {
+            select: { points: true, notes: true }
+          }
         },
       });
 
@@ -869,6 +872,31 @@ router.get(
         });
         return;
       }
+
+      let totalRequestedPoints = 0;
+      let computedCurrentPoints = 0;
+
+      if (appraisal.items && appraisal.items.length > 0) {
+        for (const item of appraisal.items) {
+          computedCurrentPoints += item.points;
+          let facultyOriginalPoints = item.points;
+          try {
+            if (item.notes) {
+              const parsed = JSON.parse(item.notes);
+              if (parsed.hodReview && typeof parsed.hodReview.originalPoints === "number") {
+                facultyOriginalPoints = parsed.hodReview.originalPoints;
+              } else if (typeof parsed.originalSubmittedPoints === "number") {
+                facultyOriginalPoints = parsed.originalSubmittedPoints;
+              }
+            }
+          } catch (e) {
+            // fallback to item.points
+          }
+          totalRequestedPoints += facultyOriginalPoints;
+        }
+      }
+
+      const totalApprovedPoints = appraisal.finalScore ?? computedCurrentPoints;
 
       // HOD's own appraisal should never sit at HOD_REVIEW — auto-advance to COMMITTEE_REVIEW.
       const isHodCaller = (req.auth?.roles ?? []).includes("HOD");
@@ -895,7 +923,9 @@ router.get(
           appraisalId: appraisal.id,
           status: effectiveStatus,
           submittedAt: appraisal.submittedAt?.toISOString() ?? null,
-          totalPoints: appraisal.finalScore ?? null,
+          totalPoints: appraisal.finalScore ?? null, // Deprecated, keep for backwards compat
+          totalRequestedPoints,
+          totalApprovedPoints,
           incrementPercent: appraisal.finalPercent ?? null,
           cycleActive: true,
           cycle: { name: cycle.name, endDate: cycle.endDate.toISOString() },
@@ -1159,7 +1189,9 @@ router.get(
         const facultyOriginalPoints =
           typeof hodReview?.originalPoints === "number"
             ? Number(hodReview.originalPoints)
-            : item.points;
+            : typeof parsed.originalSubmittedPoints === "number"
+              ? Number(parsed.originalSubmittedPoints)
+              : item.points;
 
         const reviewTrail = [
           {
@@ -1230,6 +1262,8 @@ router.get(
         ? JSON.parse(appraisal.committeeNotes)
         : {};
 
+      const totalRequestedScore = items.reduce((sum, item) => sum + (item.facultyPoints ?? 0), 0);
+
       res.json({
         success: true,
         message: "Appraisal details retrieved",
@@ -1244,6 +1278,7 @@ router.get(
           cycle: appraisal.cycle,
           items,
           finalScore: appraisal.finalScore,
+          totalRequestedScore,
           finalPercent: appraisal.finalPercent,
           hodRemarks: hodRemarksObj,
           committeeNotes: committeeNotesObj,
@@ -1494,14 +1529,26 @@ router.post(
         });
 
         await transaction.appraisalItem.createMany({
-          data: appraisalItems.map((item) => ({
-            appraisalId,
-            key: item.key,
-            category: item.category,
-            points: item.points,
-            weight: item.weight,
-            notes: item.notes,
-          })),
+          data: appraisalItems.map((item) => {
+            let parsedNotes: any = {};
+            try {
+              if (item.notes) {
+                parsedNotes = JSON.parse(item.notes);
+              }
+            } catch (e) {}
+            
+            // Backup the original requested points so it's not lost when Committee/HR overwrites item.points
+            parsedNotes.originalSubmittedPoints = item.points;
+
+            return {
+              appraisalId,
+              key: item.key,
+              category: item.category,
+              points: item.points,
+              weight: item.weight,
+              notes: JSON.stringify(parsedNotes),
+            };
+          }),
         });
 
         await transaction.appraisal.update({

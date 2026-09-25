@@ -61,10 +61,13 @@ function readHodApprovedPoints(notes: string | null, fallback: number): number {
   try {
     const parsed = JSON.parse(notes) as {
       hodReview?: { approvedPoints?: number };
+      originalSubmittedPoints?: number;
     };
     return typeof parsed.hodReview?.approvedPoints === "number"
       ? parsed.hodReview.approvedPoints
-      : fallback;
+      : typeof parsed.originalSubmittedPoints === "number"
+        ? parsed.originalSubmittedPoints
+        : fallback;
   } catch {
     return fallback;
   }

@@ -253,7 +253,10 @@ export interface FacultyAppraisalDetail {
   submittedAt?: string | null;
   items: FacultyAppraisalItemDetail[];
   finalScore?: number | null;
+  totalRequestedScore?: number | null;
   finalPercent?: number | null;
+  hodRemarks?: Record<string, any>;
+  committeeNotes?: Record<string, any>;
 }
 
 export interface FacultyCycleSummary {
